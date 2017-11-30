@@ -19,10 +19,12 @@ const defs = {
     }
 };
 
-class KISSTNC {
+class KISS_TNC {
 
     constructor (device, baud_rate, tx_delay = 50, persistence = 63, slot_time = 10, tx_tail = 1, full_duplex = false) {
 
     }
 
 }
+
+module.exports = KISS_TNC;
