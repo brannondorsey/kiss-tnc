@@ -15,7 +15,7 @@
 		"serialport" : "~6.0.4"
 	},
 	"engines" : {
-		"node" : ">= 5.0.0"
+		"node" : ">= 6.1.0"
 	},
 	"keywords" : [
 		"ax25",
