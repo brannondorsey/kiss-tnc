@@ -71,8 +71,8 @@ class KISS_TNC extends EventEmitter {
                 }
             }
         );
-        this.open = handle.open;
-        this.close = handle.close;
+        this.open = (callback) => handle.open(callback);
+        this.close = (callback) => handle.close(callback);
 
         this._send_command = function (command, data = Buffer.from([]), callback = () => {}) {
             if (typeof command != 'number' || command < 0 || (command > 6 && command != 255)) {
