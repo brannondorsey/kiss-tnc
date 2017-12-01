@@ -53,7 +53,7 @@ class KISS_TNC extends EventEmitter {
                     } else if (byte == defs.framing.fend) {
                         rx_buffer = rx_buffer.slice(offset + 1);
                         this.emit('data', Buffer.from(arr));
-                        byte = null;
+                        offset = 0;
                         in_frame = false;
                         escaped = false;
                     } else if (!escaped && byte == defs.framing.fesc) {
