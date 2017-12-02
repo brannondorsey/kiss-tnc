@@ -47,6 +47,10 @@ new KISS_TNC(device, baud_rate);
         * This is usually zero
     * _command_ is the KISS command number
         * This is usually zero, and I'm not aware of a scenario where a KISS TNC sends other types of commands to the host
+* error
+    * Listener will receive an Error parameter
+    * Presently this is just a rethrow of errors from [SerialPort](https://www.npmjs.com/package/serialport)
+
 
 ## Methods
 
