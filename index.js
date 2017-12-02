@@ -149,7 +149,7 @@ class KISS_TNC extends EventEmitter {
     // Take the TNC out of KISS mode, if it has any other mode to return to.
     // Not all TNCs support this; many that do need to be restarted afterward.
     exit_kiss(callback) {
-        this._send_command(defs.commands.exit_kiss, undefined, callback);
+        this._send_command(defs.commands.exit_kiss, undefined, undefined, callback);
     }
 
 }
