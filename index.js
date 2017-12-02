@@ -43,7 +43,7 @@ class KISS_TNC extends EventEmitter {
         handle.on(
             'data', (data) => {
                 rx_buffer = Buffer.concat([rx_buffer, data]);
-                const arr = [];
+                let arr = [];
                 let in_frame = false;
                 let escaped = false;
                 for (let offset = 0; offset < rx_buffer.length; offset++) {
@@ -53,6 +53,7 @@ class KISS_TNC extends EventEmitter {
                     } else if (byte == defs.framing.fend) {
                         rx_buffer = rx_buffer.slice(offset + 1);
                         this.emit('data', Buffer.from(arr));
+                        arr = [];
                         offset = 0;
                         in_frame = false;
                         escaped = false;
