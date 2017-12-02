@@ -32,7 +32,7 @@ function valid_numeric_setting(setting, value) {
     an exception. */
 class KISS_TNC extends EventEmitter {
 
-    constructor (device, baud_rate, port = 0) {
+    constructor (device, baud_rate) {
 
         super();
 
@@ -52,7 +52,13 @@ class KISS_TNC extends EventEmitter {
                         in_frame = (byte == defs.framing.fend);
                     } else if (byte == defs.framing.fend) {
                         rx_buffer = rx_buffer.slice(offset + 1);
-                        this.emit('data', Buffer.from(arr.slice(1))); // Discard command byte (0, data)
+                        this.emit(
+                            'data', {
+                                port : ((arr[0]&(15<<4))>>4),
+                                command : (arr[0]&15),
+                                data : Buffer.from(arr.slice(1))
+                            }
+                        );
                         arr = [];
                         offset = 0;
                         in_frame = false;
@@ -75,7 +81,7 @@ class KISS_TNC extends EventEmitter {
         this.open = (callback) => handle.open(callback);
         this.close = (callback) => handle.close(callback);
 
-        this._send_command = function (command, data = Buffer.from([]), callback = () => {}) {
+        this._send_command = function (command, port = 0, data = Buffer.from([]), callback = () => {}) {
             if (typeof command != 'number' || command < 0 || (command > 6 && command != 255)) {
                 throw `Invalid command ${command}`;
             } else if (!Buffer.isBuffer(data)) {
@@ -101,43 +107,43 @@ class KISS_TNC extends EventEmitter {
     }
 
     // value * 10 = tx_delay in ms
-    set_tx_delay(value = 50, callback) {
+    set_tx_delay(value = 50, callback, port = 0) {
         valid_numeric_setting('tx_delay', value);
-        this._send_command(defs.commands.tx_delay, Buffer.from([value]), callback);
+        this._send_command(defs.commands.tx_delay, port, Buffer.from([value]), callback);
     }
 
     // value / 255 = persistence
-    set_persistence(value = 63, callback) {
+    set_persistence(value = 63, callback, port = 0) {
         valid_numeric_setting('persistence', value);
-        this._send_command(defs.commands.persistence, Buffer.from([value]), callback);
+        this._send_command(defs.commands.persistence, port, Buffer.from([value]), callback);
     }
 
     // value * 10 = slot_time in ms
-    set_slot_time(value = 10, callback) {
+    set_slot_time(value = 10, callback, port = 0) {
         valid_numeric_setting('slot_time', value);
-        this._send_command(defs.commands.slot_time, Buffer.from([value]), callback);
+        this._send_command(defs.commands.slot_time, port, Buffer.from([value]), callback);
     }
 
     // value * 10 = tx_tail in ms
-    set_tx_tail(value = 1, callback) {
+    set_tx_tail(value = 1, callback, port = 0) {
         valid_numeric_setting('tx_tail', value);
-        this._send_command(defs.commands.tx_tail, Buffer.from([value]), callback);
+        this._send_command(defs.commands.tx_tail, port, Buffer.from([value]), callback);
     }
 
     // Zero for half duplex, 1-255 for full duplex
-    set_duplex(value = 0, callback) {
+    set_duplex(value = 0, callback, port = 0) {
         valid_numeric_setting('duplex', value);
-        this._send_command(defs.commands.duplex, Buffer.from([value]), callback);
+        this._send_command(defs.commands.duplex, port, Buffer.from([value]), callback);
     }
 
     // 'value' must be a Buffer, but its contents are entirely up to you and your TNC
-    set_hardware(value, callback) {
-        this._send_command(defs.commands.set_hardware, value, callback);
+    set_hardware(value, callback, port = 0) {
+        this._send_command(defs.commands.set_hardware, port, value, callback);
     }
 
     // 'data' must be a buffer, ie. an AX.25 frame less the start/stop flags and FCS
-    send_data(data, callback) {
-        this._send_command(defs.commands.data, data, callback);
+    send_data(data, callback, port = 0) {
+        this._send_command(defs.commands.data, port, data, callback);
     }
 
     // Take the TNC out of KISS mode, if it has any other mode to return to.
