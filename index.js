@@ -87,7 +87,7 @@ class KISS_TNC extends EventEmitter {
             } else if (!Buffer.isBuffer(data)) {
                 throw `Invalid data ${data}`;
             } else {
-                let tx_buffer = [ defs.framing.fend, command&(port<<4) ];
+                let tx_buffer = [ defs.framing.fend, command|(port<<4) ];
                 for (let offset = 0; offset < data.length; offset++) {
                     let byte = data.readUInt8(offset);
                     if (byte == defs.framing.fend) {
