@@ -1,5 +1,5 @@
 # kiss-tnc
-Talk to a packet radio KISS TNC over a serial port.
+Talk to a KISS TNC (amateur packet radio modem) over a serial port.
 
 ```js
 'use strict';
@@ -10,16 +10,34 @@ function log_packet(data) {
     const packet = new AX25.Packet();
     packet.disassemble(data.data);
     console.log(`Packet received on port ${data.port}`);
-    console.log('source', packet.source);
-    console.log('destination', packet.destination);
+    console.log('Destination:', packet.destination);
+    console.log('Source:', packet.source);
+    console.log('Type:', packet.type_name);
+    if (packet.payload.length > 0) {
+        console.log('Payload:', packet.payload.toString('ascii'));
+    }
+}
+
+function send_string(str) {
+    const packet = new AX25.Packet();
+    packet.type = AX25.Masks.control.frame_types.u_frame.subtypes.ui;
+    packet.source = { callsign : 'VE3XEC', ssid : 0 };
+    packet.destination = { callsign : 'CQ', ssid : 0 };
+    packet.payload = Buffer.from(str, 'ascii');
+    tnc.send_data(packet.assemble(), () => console.log('Sent:', str));
 }
 
 // device, baud_rate
 const tnc = new KISS_TNC('/dev/ttyACM0', 115200);
+process.on('SIGTERM', tnc.close);
 tnc.on('error', console.log);
 tnc.on('data', log_packet);
-tnc.open(() => console.log('TNC opened'));
-
+tnc.open(
+    () => {
+        console.log('TNC opened');
+        send_string('HI HI OM!');
+    }
+);
 ```
 
 ## Constructor
