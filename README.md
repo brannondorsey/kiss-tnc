@@ -1,10 +1,22 @@
 # kiss-tnc
 Talk to a KISS TNC (amateur packet radio modem) over a serial port.
 
+This is intended to be used in conjunction with my
+[AX.25 module](https://github.com/echicken/ax25).
+
+## Contents
+
+* [Example](#example)
+* [Constructor](#constructor)
+* [Events](#events)
+* [Methods](#methods)
+
+## Example
+
 ```js
 'use strict';
 const KISS_TNC = require('kiss-tnc');
-const AX25 = require('ax25');
+const AX25 = require('ax25'); // https://github.com/echicken/ax25
 
 function log_packet(data) {
     const packet = new AX25.Packet();
