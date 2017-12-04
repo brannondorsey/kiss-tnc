@@ -61,7 +61,7 @@ new KISS_TNC(device, baud_rate);
 * device _(String, required)_
     * A named serial port
     * eg. _'/dev/ttyUSB0'_, _'/dev/ttyACM0'_, _'COM4'_
-* baud_rate _(Number, required)
+* baud_rate _(Number, required)_
     * Communication rate between host and TNC over the serial port
     * eg. _9600_, _115200_
     * This has nothing to do with the over-the-air data rate of the TNC
@@ -74,7 +74,7 @@ new KISS_TNC(device, baud_rate);
             * _data_ is a Buffer, the contents of a KISS frame received from the TNC
                 * This should be an AX.25 frame without any start flag, Frame Check Sequence, or stop flag
             * _port_ is the HDLC (radio) port that the data was received from
-                * This is usually zero
+                * This is usually zero, but may be something else if you're using a multiport TNC
             * _command_ is the KISS command number
                 * This is usually zero, and I'm not aware of a scenario where a KISS TNC sends other types of commands to the host
 * error
