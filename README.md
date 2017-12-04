@@ -71,12 +71,12 @@ new KISS_TNC(device, baud_rate);
 * data
     * Listener will receive an Object parameter
         * { port, command, data }
-    * _data_ is a Buffer, the contents of a KISS frame received from the TNC
-        * This should be an AX.25 frame without any start flag, Frame Check Sequence, or stop flag
-    * _port_ is the HDLC (radio) port that the data was received from
-        * This is usually zero
-    * _command_ is the KISS command number
-        * This is usually zero, and I'm not aware of a scenario where a KISS TNC sends other types of commands to the host
+            * _data_ is a Buffer, the contents of a KISS frame received from the TNC
+                * This should be an AX.25 frame without any start flag, Frame Check Sequence, or stop flag
+            * _port_ is the HDLC (radio) port that the data was received from
+                * This is usually zero
+            * _command_ is the KISS command number
+                * This is usually zero, and I'm not aware of a scenario where a KISS TNC sends other types of commands to the host
 * error
     * Listener will receive an Error parameter
     * Presently this is just a rethrow of errors from [SerialPort](https://www.npmjs.com/package/serialport)
