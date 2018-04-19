@@ -16,7 +16,7 @@ This is intended to be used in conjunction with my
 ```js
 'use strict';
 const KISS_TNC = require('kiss-tnc');
-const AX25 = require('ax25'); // https://github.com/echicken/ax25
+const AX25 = require('ax25'); // https://github.com/echicken/node-ax25/tree/es6rewrite
 
 function log_packet(data) {
     const packet = new AX25.Packet();
