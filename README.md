@@ -2,7 +2,7 @@
 Talk to a KISS TNC (amateur packet radio modem) over a serial port.
 
 This is intended to be used in conjunction with my
-[AX.25 module](https://github.com/echicken/ax25).
+[AX.25 module](https://github.com/echicken/node-ax25/tree/es6rewrite).
 
 ## Contents
 
