@@ -1,7 +1,6 @@
 'use strict';
 const EventEmitter = require('events');
-const SerialPort = require('serialport');
-const { Socket } = require('net')
+const { Socket } = require('net');
 
 const defs = {
     framing : {
@@ -37,54 +36,42 @@ class KISS_TNC extends EventEmitter {
 
         super();
 
+        let socket = null
+        let serial = null
         let rx_buffer = Buffer.from([]);
 
-        const handle = new SerialPort(device, { baudRate : baud_rate, autoOpen : false });
+        // if the device is a network location
+        if (device.startsWith('kiss://')) {
 
-        handle.on('error', (err) => this.emit('error', err));
-        handle.on(
-            'data', (data) => {
-                rx_buffer = Buffer.concat([rx_buffer, data]);
-                let arr = [];
-                let in_frame = false;
-                let escaped = false;
-                for (let offset = 0; offset < rx_buffer.length; offset++) {
-                    let byte = rx_buffer.readUInt8(offset);
-                    if (!in_frame) {
-                        in_frame = (byte == defs.framing.fend);
-                    } else if (byte == defs.framing.fend) {
-                        rx_buffer = rx_buffer.slice(offset + 1);
-                        this.emit(
-                            'data', {
-                                port : ((arr[0]&(15<<4))>>4),
-                                command : (arr[0]&15),
-                                data : Buffer.from(arr.slice(1))
-                            }
-                        );
-                        arr = [];
-                        offset = 0;
-                        in_frame = false;
-                        escaped = false;
-                    } else if (!escaped && byte == defs.framing.fesc) {
-                        escaped = true;
-                    } else if (escaped) {
-                        if (byte == defs.framing.tfesc) {
-                            arr.push(defs.framing.fesc);
-                        } else if (byte == defs.framing.tfend) {
-                            arr.push(defs.framing.fend);
-                        }
-                        escaped = false;
-                    } else {
-                        arr.push(byte);
-                    }
-                }
+            const network_location = device.substring(7)
+            const split = network_location.split(':')
+            if (split.length != 2) throw TypeError('kiss:// device location is malformed.')
+            const host = split[0]
+            const port = parseInt(split[1])
+
+            socket = new Socket({ readable: true, writable: true })
+            socket.on('error', (err) => this.emit('error', err))
+            socket.on('data', (data) => this._on_data_rx(rx_buffer, data))
+
+            this.open = (callback) => {
+                socket.on('connect', callback)
+                socket.connect({ host, port })
             }
-        );
-        this.open = (callback) => handle.open(callback);
-        this.close = (callback) => handle.close(callback);
 
-        this.open_tcp = (callback) => {
-            handle.open(callback)
+            this.close = (callback) => {
+                socket.on('close', callback)
+                socket.end()
+            }
+
+        // if the device is a serial device
+        } else {
+            // lazy load the serialport module, only if its needed
+            const SerialPort = require('serialport');
+            serial = new SerialPort(device, { baudRate : baud_rate, autoOpen : false });
+            serial.on('error', (err) => this.emit('error', err));
+            serial.on('data', (data) => this._on_data_rx(rx_buffer, data));
+            this.open = (callback) => serial.open(callback);
+            this.close = (callback) => serial.close(callback);
         }
 
         this._send_command = function (command, port = 0, data = Buffer.from([]), callback = () => {}) {
@@ -94,8 +81,53 @@ class KISS_TNC extends EventEmitter {
                 throw `Invalid data ${data}`;
             } else {
                 const tx_buffer = this._get_tx_buffer(command, port, data)
-                handle.write(tx_buffer);
-                handle.drain(callback);
+                // if we're using a serial port
+                if (serial != null) {
+                    serial.write(tx_buffer);
+                    serial.drain(callback);
+                // if we are using a network socket
+                } else if (socket != null) {
+                    socket.write(Buffer.from(tx_buffer), null, callback)
+                } else {
+                    throw Error('Cannot send command, both socket and serial are null.')
+                }
+            }
+        }
+    }
+
+    _on_data_rx(rx_buffer, data) {
+        rx_buffer = Buffer.concat([rx_buffer, data]);
+        let arr = [];
+        let in_frame = false;
+        let escaped = false;
+        for (let offset = 0; offset < rx_buffer.length; offset++) {
+            let byte = rx_buffer.readUInt8(offset);
+            if (!in_frame) {
+                in_frame = (byte == defs.framing.fend);
+            } else if (byte == defs.framing.fend) {
+                rx_buffer = rx_buffer.slice(offset + 1);
+                this.emit(
+                    'data', {
+                        port : ((arr[0]&(15<<4))>>4),
+                        command : (arr[0]&15),
+                        data : Buffer.from(arr.slice(1))
+                    }
+                );
+                arr = [];
+                offset = 0;
+                in_frame = false;
+                escaped = false;
+            } else if (!escaped && byte == defs.framing.fesc) {
+                escaped = true;
+            } else if (escaped) {
+                if (byte == defs.framing.tfesc) {
+                    arr.push(defs.framing.fesc);
+                } else if (byte == defs.framing.tfend) {
+                    arr.push(defs.framing.fend);
+                }
+                escaped = false;
+            } else {
+                arr.push(byte);
             }
         }
     }
@@ -156,56 +188,11 @@ class KISS_TNC extends EventEmitter {
         this._send_command(defs.commands.data, port, data, callback);
     }
 
-    send_data_tcp(host, port, data, callback) {
-        const socket = new Socket({ writable: true })
-        socket.connect({ host, port })
-        const tx_buffer = this._get_tx_buffer(defs.commands.data, 0, data)
-        socket.write(Buffer.from(tx_buffer), null, callback)
-        // let rx_buffer = Buffer.from([])
-        // socket.on('data', (data) => {
-        //     rx_buffer = Buffer.concat([rx_buffer, data]);
-        //         let arr = [];
-        //         let in_frame = false;
-        //         let escaped = false;
-        //         for (let offset = 0; offset < rx_buffer.length; offset++) {
-        //             let byte = rx_buffer.readUInt8(offset);
-        //             if (!in_frame) {
-        //                 in_frame = (byte == defs.framing.fend);
-        //             } else if (byte == defs.framing.fend) {
-        //                 rx_buffer = rx_buffer.slice(offset + 1);
-        //                 this.emit(
-        //                     'data', {
-        //                         port : ((arr[0]&(15<<4))>>4),
-        //                         command : (arr[0]&15),
-        //                         data : Buffer.from(arr.slice(1))
-        //                     }
-        //                 );
-        //                 arr = [];
-        //                 offset = 0;
-        //                 in_frame = false;
-        //                 escaped = false;
-        //             } else if (!escaped && byte == defs.framing.fesc) {
-        //                 escaped = true;
-        //             } else if (escaped) {
-        //                 if (byte == defs.framing.tfesc) {
-        //                     arr.push(defs.framing.fesc);
-        //                 } else if (byte == defs.framing.tfend) {
-        //                     arr.push(defs.framing.fend);
-        //                 }
-        //                 escaped = false;
-        //             } else {
-        //                 arr.push(byte);
-        //             }
-        //         }
-        // })
-    }
-
     // Take the TNC out of KISS mode, if it has any other mode to return to.
     // Not all TNCs support this; many that do need to be restarted afterward.
     exit_kiss(callback) {
         this._send_command(defs.commands.exit_kiss, undefined, undefined, callback);
     }
-
 }
 
 module.exports = KISS_TNC;

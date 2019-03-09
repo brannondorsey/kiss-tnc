@@ -21,21 +21,31 @@ function send_string(str) {
     packet.destination = { callsign : 'CQ', ssid : 0 };
     packet.payload = Buffer.from(str, 'ascii');
     
-    // send data via TCP
-    tnc.send_data_tcp('localhost', 8001, packet.assemble(), () => console.log('Sent:', str));
-    
     //// send data via serial
-    // tnc.send_data(packet.assemble(), () => console.log('Sent:', str));
+    tnc.send_data(packet.assemble(), () => console.log('Sent:', str));
 }
 
 // device, baud_rate
-const tnc = new KISS_TNC('/tmp/kisstnc', 9600);
+const tnc = new KISS_TNC('kiss://localhost:8001', 9600);
 process.on('SIGTERM', tnc.close);
+
 tnc.on('error', console.error);
 tnc.on('data', log_packet);
-tnc.open(
-    () => {
-        console.log('TNC opened');
+tnc.open(() => {
+
+    console.log('TNC opened');
+
+    // send an example message every 2 seconds
+    setInterval(() => {
         send_string('This is a message dude.');
-    }
-);
+    }, 2000)
+});
+
+// close the socket and exit the program after 7 seconds
+setTimeout(() => {
+    console.log('closing the TNC connection...')
+    tnc.close(() => {
+        console.log('the TNC connection is now closed.')
+        process.exit(0)
+    })
+}, 7000)
