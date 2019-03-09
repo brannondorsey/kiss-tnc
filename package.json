@@ -1,29 +1,30 @@
-{	"name" : "kiss-tnc",
-	"version" : "0.0.1",
-	"license" : "MIT",
-	"description" : "An API for talking to KISS TNC devices from node.js.",
-	"author" : {
-		"name" : "echicken",
-		"email" : "echicken@bbs.electronicchicken.com"
+{
+	"name": "kiss-tnc",
+	"version": "0.0.1",
+	"license": "MIT",
+	"description": "An API for talking to KISS TNC devices from node.js.",
+	"author": {
+		"name": "echicken",
+		"email": "echicken@bbs.electronicchicken.com"
 	},
-	"main" : "./index.js",
-	"repository" : {
-		"type" : "git",
-		"url" : "https://github.com/echicken/kiss-tnc.git"
+	"main": "./index.js",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/echicken/kiss-tnc.git"
 	},
-	"dependencies" : {
-		"serialport" : "~6.0.4"
+	"dependencies": {
+		"serialport": "~6.0.4"
 	},
-	"engines" : {
-		"node" : ">= 6.1.0"
+	"engines": {
+		"node": ">= 6.1.0"
 	},
-	"keywords" : [
+	"keywords": [
 		"ax25",
 		"ax.25",
 		"ham",
 		"packet",
 		"radio",
 		"kiss",
-        "tnc"
+		"tnc"
 	]
 }

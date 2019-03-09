@@ -1,6 +1,7 @@
 'use strict';
 const EventEmitter = require('events');
 const SerialPort = require('serialport');
+const { Socket } = require('net')
 
 const defs = {
     framing : {
@@ -39,6 +40,7 @@ class KISS_TNC extends EventEmitter {
         let rx_buffer = Buffer.from([]);
 
         const handle = new SerialPort(device, { baudRate : baud_rate, autoOpen : false });
+
         handle.on('error', (err) => this.emit('error', err));
         handle.on(
             'data', (data) => {
@@ -81,29 +83,37 @@ class KISS_TNC extends EventEmitter {
         this.open = (callback) => handle.open(callback);
         this.close = (callback) => handle.close(callback);
 
+        this.open_tcp = (callback) => {
+            handle.open(callback)
+        }
+
         this._send_command = function (command, port = 0, data = Buffer.from([]), callback = () => {}) {
             if (typeof command != 'number' || command < 0 || (command > 6 && command != 255)) {
                 throw `Invalid command ${command}`;
             } else if (!Buffer.isBuffer(data)) {
                 throw `Invalid data ${data}`;
             } else {
-                let tx_buffer = [ defs.framing.fend, command|(port<<4) ];
-                for (let offset = 0; offset < data.length; offset++) {
-                    let byte = data.readUInt8(offset);
-                    if (byte == defs.framing.fend) {
-                        tx_buffer = tx_buffer.concat([ defs.framing.fesc, defs.framing.tfend ]);
-                    } else if (byte == defs.framing.fesc) {
-                        tx_buffer = tx_buffer.concat([ defs.framing.fesc, defs.framing.tfesc ]);
-                    } else {
-                        tx_buffer.push(byte);
-                    }
-                }
-                tx_buffer.push(defs.framing.fend);
+                const tx_buffer = this._get_tx_buffer(command, port, data)
                 handle.write(tx_buffer);
                 handle.drain(callback);
             }
         }
+    }
 
+    _get_tx_buffer(command, port, data) {
+        let tx_buffer = [ defs.framing.fend, command|(port<<4) ];
+        for (let offset = 0; offset < data.length; offset++) {
+            let byte = data.readUInt8(offset);
+            if (byte == defs.framing.fend) {
+                tx_buffer = tx_buffer.concat([ defs.framing.fesc, defs.framing.tfend ]);
+            } else if (byte == defs.framing.fesc) {
+                tx_buffer = tx_buffer.concat([ defs.framing.fesc, defs.framing.tfesc ]);
+            } else {
+                tx_buffer.push(byte);
+            }
+        }
+        tx_buffer.push(defs.framing.fend);
+        return tx_buffer;
     }
 
     // value * 10 = tx_delay in ms
@@ -144,6 +154,50 @@ class KISS_TNC extends EventEmitter {
     // 'data' must be a buffer, ie. an AX.25 frame less the start/stop flags and FCS
     send_data(data, callback, port = 0) {
         this._send_command(defs.commands.data, port, data, callback);
+    }
+
+    send_data_tcp(host, port, data, callback) {
+        const socket = new Socket({ writable: true })
+        socket.connect({ host, port })
+        const tx_buffer = this._get_tx_buffer(defs.commands.data, 0, data)
+        socket.write(Buffer.from(tx_buffer), null, callback)
+        // let rx_buffer = Buffer.from([])
+        // socket.on('data', (data) => {
+        //     rx_buffer = Buffer.concat([rx_buffer, data]);
+        //         let arr = [];
+        //         let in_frame = false;
+        //         let escaped = false;
+        //         for (let offset = 0; offset < rx_buffer.length; offset++) {
+        //             let byte = rx_buffer.readUInt8(offset);
+        //             if (!in_frame) {
+        //                 in_frame = (byte == defs.framing.fend);
+        //             } else if (byte == defs.framing.fend) {
+        //                 rx_buffer = rx_buffer.slice(offset + 1);
+        //                 this.emit(
+        //                     'data', {
+        //                         port : ((arr[0]&(15<<4))>>4),
+        //                         command : (arr[0]&15),
+        //                         data : Buffer.from(arr.slice(1))
+        //                     }
+        //                 );
+        //                 arr = [];
+        //                 offset = 0;
+        //                 in_frame = false;
+        //                 escaped = false;
+        //             } else if (!escaped && byte == defs.framing.fesc) {
+        //                 escaped = true;
+        //             } else if (escaped) {
+        //                 if (byte == defs.framing.tfesc) {
+        //                     arr.push(defs.framing.fesc);
+        //                 } else if (byte == defs.framing.tfend) {
+        //                     arr.push(defs.framing.fend);
+        //                 }
+        //                 escaped = false;
+        //             } else {
+        //                 arr.push(byte);
+        //             }
+        //         }
+        // })
     }
 
     // Take the TNC out of KISS mode, if it has any other mode to return to.
