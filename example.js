@@ -1,6 +1,6 @@
 'use strict';
 const KISS_TNC = require('.');
-const AX25 = require('../node-ax25'); // https://github.com/echicken/node-ax25/tree/es6rewrite
+const AX25 = require('ax25'); // https://github.com/echicken/node-ax25/tree/es6rewrite
 
 function log_packet(data) {
     const packet = new AX25.Packet();
@@ -20,13 +20,15 @@ function send_string(str) {
     packet.source = { callsign : 'KC3LZO', ssid : 0 };
     packet.destination = { callsign : 'CQ', ssid : 0 };
     packet.payload = Buffer.from(str, 'ascii');
-    
+
     //// send data via serial
     tnc.send_data(packet.assemble(), () => console.log('Sent:', str));
 }
 
 // device, baud_rate
 const tnc = new KISS_TNC('kiss://localhost:8001', 9600);
+// const tnc = new KISS_TNC('/tmp/kisstnc', 9600);
+
 process.on('SIGTERM', tnc.close);
 
 tnc.on('error', console.error);

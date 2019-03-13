@@ -15,6 +15,9 @@
 	"dependencies": {
 		"serialport": "~6.0.4"
 	},
+	"devDependencies": {
+		"ax25": "git+https://github.com/echicken/node-ax25.git#124b496631fa448d95ac97553cdd1c8120d4f9cb"
+	},
 	"engines": {
 		"node": ">= 6.1.0"
 	},
