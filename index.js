@@ -45,9 +45,15 @@ class KISS_TNC extends EventEmitter {
 
             const network_location = device.substring(7)
             const split = network_location.split(':')
-            if (split.length != 2) throw TypeError('kiss:// device location is malformed.')
+            if (split.length != 2) {
+                throw TypeError('kiss:// device location must be in the format "kiss://host:port".')
+            }
             const host = split[0]
             const port = parseInt(split[1])
+            if (isNaN(port)) throw TypeError('kiss:// device must include a valid port number.')
+            else if (port < 0 || port > 65535) {
+                throw TypeError('kiss:// device port must be an integer between 0 and 65535.')
+            }
 
             socket = new Socket({ readable: true, writable: true })
             socket.on('error', (err) => this.emit('error', err))
