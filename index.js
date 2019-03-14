@@ -43,6 +43,7 @@ class KISS_TNC extends EventEmitter {
         // if the device is a network location
         if (device.startsWith('kiss://')) {
 
+            let openCallback = null
             const network_location = device.substring(7)
             const split = network_location.split(':')
             if (split.length != 2) {
@@ -56,11 +57,20 @@ class KISS_TNC extends EventEmitter {
             }
 
             socket = new Socket({ readable: true, writable: true })
-            socket.on('error', (err) => this.emit('error', err))
+            socket.on('error', (err) => {
+                // if the error occurred before the connection was opened,
+                // call the openCallback with the error
+                if (openCallback) openCallback(err)
+                this.emit('error', err)
+            })
             socket.on('data', (data) => this._on_data_rx(rx_buffer, data))
 
             this.open = (callback) => {
-                socket.on('connect', callback)
+                openCallback = callback
+                socket.on('connect', () => {
+                    openCallback = null
+                    callback()
+                })
                 socket.connect({ host, port })
             }
 
